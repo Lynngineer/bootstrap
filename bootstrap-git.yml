@@ -34,7 +34,27 @@
       path: '/etc/ssh/ssh_known_hosts'
       state: present
 
-  - name: users(s) - ssh key for github
+
+  - name: ensure sudoers group exist
+    group:
+      name: "sudo"
+      state: present
+
+  - name: users(s) - sudo
+    user:
+      name: '{{user.username_os}}'
+      state: present
+      groups: sudo
+      append: yes
+      generate_ssh_key: yes
+#      ssh_key_file: default: .ssh/id_rsa
+    become: true
+    loop: '{{users}}'
+    loop_control:
+      loop_var: user
+
+
+  - name: users(s) - github ssh key
     user:
       name: '{{user.username_os}}'
       state: present
@@ -70,3 +90,47 @@
     loop: "{{ users }}"
     loop_control:
       loop_var: user
+
+  - name: install dependencies (apt)
+    become: yes
+    apt:
+      name:
+        - ca-certificates
+        - apt-transport-https
+        - gconf2
+        - libasound2
+        - libgtk2.0-0
+        - libxss1
+      state: present
+
+  - name: install key (apt)
+    become: yes
+    apt_key:
+      url: 'https://packages.microsoft.com/keys/microsoft.asc'
+      state: present
+
+  - name: install VS Code repo (apt)
+    become: yes
+    apt_repository:
+      repo: deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main
+      filename: vscode
+      state: present
+
+  - name: install VS Code (apt)
+    become: yes
+    apt:
+      name: code
+      state: present
+
+
+  - name: install extras
+    become: yes
+    apt:
+      name:
+        - lynx
+        - htop
+      state: present
+
+  - name: release the kraken
+    apt:
+      deb: https://release.gitkraken.com/linux/gitkraken-amd64.deb
